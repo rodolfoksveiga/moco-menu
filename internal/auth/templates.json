@@ -1,0 +1,21 @@
+{
+  "MayDay": {
+    "customer": "Mayflower GmbH",
+    "project": "Allgemein",
+    "task": "MayDay, Barcamp, Weiterbildung",
+    "duration": 8,
+    "description": "MayDay"
+  },
+  "DOHS": {
+    "customer": "Mayflower GmbH",
+    "project": "Allgemein",
+    "task": "Interne Meetings",
+    "description": "DOHS"
+  },
+  "Destination Solutions": {
+    "customer": "DS Destination Solutions GmbH",
+    "project": "Unterstützung Development",
+    "task": "Development",
+    "description": "DOHS"
+  }
+}
