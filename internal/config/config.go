@@ -2,38 +2,27 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
+
+	"github.com/rodolfoksveiga/moco-menu/pkg/menu"
 )
 
-type Config struct {
-	ConfigFilePath string
+type Init struct {
+	ConfigPath string
 }
 
-func (config Config) Load() (*AuthConfig, *string) {
-	configFile, err := os.Open(config.ConfigFilePath)
-	if err != nil {
-		fmt.Println("Error:", err)
-		errMsg := "Could not find config file."
-		return nil, &errMsg
-	}
+func (init Init) Load() *Config {
+	configFile, err := os.Open(init.ConfigPath)
+	menu.ExitOnError(err, "Could not find config file.")
 	defer configFile.Close()
 
 	configBytes, err := ioutil.ReadAll(configFile)
-	if err != nil {
-		fmt.Println("Error:", err)
-		errMsg := "Could not read config file."
-		return nil, &errMsg
-	}
+	menu.ExitOnError(err, "Could not read config file.")
 
-	var authConfig AuthConfig
-	err = json.Unmarshal(configBytes, &authConfig)
-	if err != nil {
-		fmt.Println("Error:", err)
-		errMsg := "Could not map config file."
-		return nil, &errMsg
-	}
+	var config Config
+	err = json.Unmarshal(configBytes, &config)
+	menu.ExitOnError(err, "Could not map config file.")
 
-	return &authConfig, nil
+	return &config
 }

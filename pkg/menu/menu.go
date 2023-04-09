@@ -11,26 +11,41 @@ type Menu struct {
 	Options []string
 }
 
-func Exit(msg string) {
-	cmd := exec.Command("dunstify", msg, "-u", "critical")
+func Exit(errMsg string) {
+	cmd := exec.Command("dunstify", errMsg, "-u", "critical")
 	cmd.Run()
 	os.Exit(1)
 }
 
-func ExitOnError(err error, msg string) {
+func ExitOnError(err error, errMsg string) {
 	if err != nil {
-		Exit(msg)
+		Exit(errMsg)
 	}
 }
 
-func (menu Menu) RunMenu() string {
-	optionsStr := strings.Join(menu.Options, "\n")
+func NotifySuccess(msg string) {
+	cmd := exec.Command("dunstify", msg)
+	cmd.Run()
+	os.Exit(0)
+}
 
-	cmd := exec.Command("dmenu", "-i", "-c", "-l", "20", "-p", menu.Prompt)
+func RunMenu(prompt string, options []string) string {
+	optionsStr := strings.Join(options, "\n")
+
+	cmd := exec.Command("dmenu", "-i", "-c", "-l", "20", "-p", prompt)
 	cmd.Stdin = strings.NewReader(optionsStr)
 
 	output, err := cmd.Output()
-	ExitOnError(err, "Exit Menu")
+	ExitOnError(err, "Exit Moco menu.")
 
 	return strings.TrimSpace(string(output))
+}
+
+func RunConfirmationMenu() {
+	confirmMenuOptions := []string{"Yes", "No"}
+	selected := RunMenu("Are you sure?", confirmMenuOptions)
+
+	if selected != "Yes" {
+		Exit("Operation cancelled.")
+	}
 }

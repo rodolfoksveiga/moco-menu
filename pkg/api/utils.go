@@ -16,3 +16,14 @@ func findUserByEmail(users []User, email string) *User {
 	}
 	return nil
 }
+
+func FindRunningActivityId(activities []Activity) *int64 {
+	var activityId int64
+	for i := 0; i < len(activities); i++ {
+		if activities[i].TimerStartedAt != nil {
+			activityId = activities[i].Id
+		}
+	}
+
+	return &activityId
+}

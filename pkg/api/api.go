@@ -21,18 +21,18 @@ type Client struct {
 	ApiKey      string
 }
 
-func (apiClient Client) FetchUserId() *int64 {
-	url := fmt.Sprintf("https://%s.mocoapp.com/api/v1/users", apiClient.Domain)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.AdminApiKey)
+func (client Client) FetchUserId() *int64 {
+	url := fmt.Sprintf("https://%s.mocoapp.com/api/v1/users", client.Domain)
+	authHeader := fmt.Sprintf("Token token=%s", client.AdminApiKey)
 
 	req, err := http.NewRequest("GET", url, nil)
 	menu.ExitOnError(err, "Failed to create request.")
 
 	prepareHeaders(req, authHeader)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to fetch user id failed.")
 	defer resp.Body.Close()
 
@@ -41,7 +41,7 @@ func (apiClient Client) FetchUserId() *int64 {
 
 	var users []User
 	json.Unmarshal(bodyBytes, &users)
-	user := findUserByEmail(users, apiClient.Email)
+	user := findUserByEmail(users, client.Email)
 
 	if user == nil {
 		cmd := exec.Command(
@@ -57,22 +57,22 @@ func (apiClient Client) FetchUserId() *int64 {
 	return &user.Id
 }
 
-func (apiClient Client) FetchAnnualyVariationUntilToday() float64 {
+func (client Client) FetchAnnualyVariationUntilToday() float64 {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/users/%s/performance_report",
-		apiClient.Domain,
-		strconv.FormatInt(apiClient.UserId, 10),
+		client.Domain,
+		strconv.FormatInt(client.UserId, 10),
 	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.AdminApiKey)
+	authHeader := fmt.Sprintf("Token token=%s", client.AdminApiKey)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
 	menu.ExitOnError(err, "Failed to create request.")
 
 	prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to fetch annualy variation until today failed.")
 	defer resp.Body.Close()
 
@@ -85,21 +85,21 @@ func (apiClient Client) FetchAnnualyVariationUntilToday() float64 {
 	return performanceReport.Annually.VariationUntilToday
 }
 
-func (apiClient Client) FetchActiveProjectsArr() []Project {
+func (client Client) FetchActiveProjectsArr() []Project {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/projects/assigned?active=true",
-		apiClient.Domain,
+		client.Domain,
 	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+	authHeader := fmt.Sprintf("Token token=%s", client.ApiKey)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
 	menu.ExitOnError(err, "Failed to create request.")
 
 	prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to fetch projects failed.")
 	defer resp.Body.Close()
 
@@ -112,22 +112,22 @@ func (apiClient Client) FetchActiveProjectsArr() []Project {
 	return projects
 }
 
-func (apiClient Client) FetchProjectTasksArr(projectId int64) []Task {
+func (client Client) FetchProjectTasksArr(projectId int64) []Task {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/projects/%s/tasks",
-		apiClient.Domain,
+		client.Domain,
 		strconv.FormatInt(projectId, 10),
 	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+	authHeader := fmt.Sprintf("Token token=%s", client.ApiKey)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
 	menu.ExitOnError(err, "Failed to create request.")
 
 	prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to fetch project tasks id failed.")
 	defer resp.Body.Close()
 
@@ -140,22 +140,22 @@ func (apiClient Client) FetchProjectTasksArr(projectId int64) []Task {
 	return tasks
 }
 
-func (apiClient Client) FetchActivity(activityId int64) Activity {
+func (client Client) FetchActivity(activityId int64) Activity {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/activities/%s",
-		apiClient.Domain,
+		client.Domain,
 		strconv.FormatInt(activityId, 10),
 	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+	authHeader := fmt.Sprintf("Token token=%s", client.ApiKey)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
 	menu.ExitOnError(err, "Failed to create request.")
 
 	prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to fecth activity failed.")
 	defer resp.Body.Close()
 
@@ -168,24 +168,24 @@ func (apiClient Client) FetchActivity(activityId int64) Activity {
 	return activity
 }
 
-func (apiClient Client) FetchActivitiesArr(from string, to string) []Activity {
+func (client Client) FetchActivitiesArr(from string, to string) []Activity {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/activities?user_id=%s&from=%s&to=%s",
-		apiClient.Domain,
-		strconv.FormatInt(apiClient.UserId, 10),
+		client.Domain,
+		strconv.FormatInt(client.UserId, 10),
 		from,
 		to,
 	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+	authHeader := fmt.Sprintf("Token token=%s", client.ApiKey)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
 	menu.ExitOnError(err, "Failed to create request.")
 
 	prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to fetch activities failed.")
 	defer resp.Body.Close()
 
@@ -198,7 +198,7 @@ func (apiClient Client) FetchActivitiesArr(from string, to string) []Activity {
 	return activities
 }
 
-func (apiClient Client) CreateActivity(
+func (client Client) CreateActivity(
 	projectId int64,
 	taskId int64,
 	date string,
@@ -207,11 +207,11 @@ func (apiClient Client) CreateActivity(
 ) {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/activities",
-		apiClient.Domain,
+		client.Domain,
 	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+	authHeader := fmt.Sprintf("Token token=%s", client.ApiKey)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
 	newActivity := CreateActivity{
 		ProjectId:   projectId,
@@ -228,12 +228,12 @@ func (apiClient Client) CreateActivity(
 
 	prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to create activity failed.")
 	defer resp.Body.Close()
 }
 
-func (apiClient Client) UpdateActivity(
+func (client Client) UpdateActivity(
 	activityId int64,
 	projectId int64,
 	taskId int64,
@@ -243,12 +243,12 @@ func (apiClient Client) UpdateActivity(
 ) {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/activities/%s",
-		apiClient.Domain,
+		client.Domain,
 		strconv.FormatInt(activityId, 10),
 	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+	authHeader := fmt.Sprintf("Token token=%s", client.ApiKey)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
 	newActivity := UpdateActivity{
 		ActivityId:  activityId,
@@ -266,60 +266,60 @@ func (apiClient Client) UpdateActivity(
 
 	prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to update activity failed.")
 	defer resp.Body.Close()
 }
 
-func (apiClient Client) DeleteActivity(
+func (client Client) DeleteActivity(
 	activityId int64,
 ) {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/activities/%s",
-		apiClient.Domain,
+		client.Domain,
 		strconv.FormatInt(activityId, 10),
 	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+	authHeader := fmt.Sprintf("Token token=%s", client.ApiKey)
 
-	client := &http.Client{}
+	httpClient := &http.Client{}
 
 	req, err := http.NewRequest("DELETE", url, nil)
 	menu.ExitOnError(err, "Failed to create request.")
 
 	prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	menu.ExitOnError(err, "Request to delete activity failed.")
 	defer resp.Body.Close()
 }
 
-func (apiClient Client) ControlActivityTimer(
+func (client Client) ControlActivityTimer(
 	activityId int64,
 	control string,
 ) {
 	if control == "start" || control == "stop" {
 		url := fmt.Sprintf(
 			"https://%s.mocoapp.com/api/v1/activities/%s/%s_timer",
-			apiClient.Domain,
+			client.Domain,
 			strconv.FormatInt(activityId, 10),
 			control,
 		)
-		authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+		authHeader := fmt.Sprintf("Token token=%s", client.ApiKey)
 
-		client := &http.Client{}
+		httpClient := &http.Client{}
 
 		req, err := http.NewRequest("PATCH", url, nil)
 		menu.ExitOnError(err, "Failed to create request.")
 
 		prepareHeaders(req, authHeader)
 
-		resp, err := client.Do(req)
+		resp, err := httpClient.Do(req)
 		menu.ExitOnError(
 			err,
 			fmt.Sprintf("Request to %s activity timer failed.", control),
 		)
 		defer resp.Body.Close()
 	} else {
-		menu.Exit("Timer control different than \"start\" or \"stop\".")
+		menu.Exit("Timer control can't be different than \"start\" or \"stop\".")
 	}
 }

@@ -16,20 +16,25 @@ type Project struct {
 	Customer Customer `json:"customer"`
 }
 
+type ActivityProject struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
 type Task struct {
 	Id   int64  `json:"id"`
 	Name string `json:"name"`
 }
 
 type Activity struct {
-	Id             int64    `json:"id"`
-	Date           string   `json:"date"`
-	Hours          float64  `json:"hours"`
-	Description    string   `json:"description,omitempty"`
-	Project        Project  `json:"project"`
-	Task           Task     `json:"task"`
-	Customer       Customer `json:"customer"`
-	TimerStartedAt string   `json:"timer_started_at"`
+	Id             int64           `json:"id"`
+	Date           string          `json:"date"`
+	Hours          float64         `json:"hours"`
+	Description    string          `json:"description,omitempty"`
+	Project        ActivityProject `json:"project"`
+	Task           Task            `json:"task"`
+	Customer       Customer        `json:"customer"`
+	TimerStartedAt *string         `json:"timer_started_at"`
 }
 
 type AnnualReport struct {

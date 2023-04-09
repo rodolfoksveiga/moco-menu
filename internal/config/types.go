@@ -1,6 +1,6 @@
 package config
 
-type AuthConfig struct {
+type Config struct {
 	Domain      string `json:"domain"`
 	Email       string `json:"email"`
 	UserId      int64  `json:"userId"`
