@@ -1,8 +1,4 @@
-package auth
-
-type Config struct {
-	ConfigFilePath string
-}
+package config
 
 type AuthConfig struct {
 	Domain      string `json:"domain"`

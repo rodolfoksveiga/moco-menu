@@ -6,18 +6,27 @@ import (
 	"strings"
 )
 
+type Menu struct {
+	Prompt  string
+	Options []string
+}
+
+func Exit(msg string) {
+	cmd := exec.Command("dunstify", msg, "-u", "critical")
+	cmd.Run()
+	os.Exit(1)
+}
+
 func ExitOnError(err error, msg string) {
 	if err != nil {
-		cmd := exec.Command("dunstify", msg, "-u", "critical")
-		cmd.Run()
-		os.Exit(1)
+		Exit(msg)
 	}
 }
 
-func RunMenu(prompt string, options []string) string {
-	optionsStr := strings.Join(options, "\n")
+func (menu Menu) RunMenu() string {
+	optionsStr := strings.Join(menu.Options, "\n")
 
-	cmd := exec.Command("dmenu", "-i", "-c", "-l", "20", "-p", prompt)
+	cmd := exec.Command("dmenu", "-i", "-c", "-l", "20", "-p", menu.Prompt)
 	cmd.Stdin = strings.NewReader(optionsStr)
 
 	output, err := cmd.Output()

@@ -1,4 +1,4 @@
-package auth
+package config
 
 import (
 	"encoding/json"
@@ -6,6 +6,10 @@ import (
 	"io/ioutil"
 	"os"
 )
+
+type Config struct {
+	ConfigFilePath string
+}
 
 func (config Config) Load() (*AuthConfig, *string) {
 	configFile, err := os.Open(config.ConfigFilePath)

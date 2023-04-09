@@ -21,7 +21,7 @@ type Client struct {
 	ApiKey      string
 }
 
-func (apiClient Client) FetUserId() *int64 {
+func (apiClient Client) FetchUserId() *int64 {
 	url := fmt.Sprintf("https://%s.mocoapp.com/api/v1/users", apiClient.Domain)
 	authHeader := fmt.Sprintf("Token token=%s", apiClient.AdminApiKey)
 
@@ -57,7 +57,118 @@ func (apiClient Client) FetUserId() *int64 {
 	return &user.Id
 }
 
-func (apiClient Client) FetchActivities(from string, to string) []Activity {
+func (apiClient Client) FetchAnnualyVariationUntilToday() float64 {
+	url := fmt.Sprintf(
+		"https://%s.mocoapp.com/api/v1/users/%s/performance_report",
+		apiClient.Domain,
+		strconv.FormatInt(apiClient.UserId, 10),
+	)
+	authHeader := fmt.Sprintf("Token token=%s", apiClient.AdminApiKey)
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+	menu.ExitOnError(err, "Failed to create request.")
+
+	prepareHeaders(req, authHeader)
+
+	resp, err := client.Do(req)
+	menu.ExitOnError(err, "Request to fetch annualy variation until today failed.")
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	menu.ExitOnError(err, "Failed to read response body.")
+
+	var performanceReport PerformanceReport
+	json.Unmarshal(bodyBytes, &performanceReport)
+
+	return performanceReport.Annually.VariationUntilToday
+}
+
+func (apiClient Client) FetchActiveProjectsArr() []Project {
+	url := fmt.Sprintf(
+		"https://%s.mocoapp.com/api/v1/projects/assigned?active=true",
+		apiClient.Domain,
+	)
+	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+	menu.ExitOnError(err, "Failed to create request.")
+
+	prepareHeaders(req, authHeader)
+
+	resp, err := client.Do(req)
+	menu.ExitOnError(err, "Request to fetch projects failed.")
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	menu.ExitOnError(err, "Failed to read response body.")
+
+	var projects []Project
+	json.Unmarshal(bodyBytes, &projects)
+
+	return projects
+}
+
+func (apiClient Client) FetchProjectTasksArr(projectId int64) []Task {
+	url := fmt.Sprintf(
+		"https://%s.mocoapp.com/api/v1/projects/%s/tasks",
+		apiClient.Domain,
+		strconv.FormatInt(projectId, 10),
+	)
+	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+	menu.ExitOnError(err, "Failed to create request.")
+
+	prepareHeaders(req, authHeader)
+
+	resp, err := client.Do(req)
+	menu.ExitOnError(err, "Request to fetch project tasks id failed.")
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	menu.ExitOnError(err, "Failed to read response body.")
+
+	var tasks []Task
+	json.Unmarshal(bodyBytes, &tasks)
+
+	return tasks
+}
+
+func (apiClient Client) FetchActivity(activityId int64) Activity {
+	url := fmt.Sprintf(
+		"https://%s.mocoapp.com/api/v1/activities/%s",
+		apiClient.Domain,
+		strconv.FormatInt(activityId, 10),
+	)
+	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+
+	client := &http.Client{}
+
+	req, err := http.NewRequest("GET", url, nil)
+	menu.ExitOnError(err, "Failed to create request.")
+
+	prepareHeaders(req, authHeader)
+
+	resp, err := client.Do(req)
+	menu.ExitOnError(err, "Request to fecth activity failed.")
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	menu.ExitOnError(err, "Failed to read response body.")
+
+	var activity Activity
+	json.Unmarshal(bodyBytes, &activity)
+
+	return activity
+}
+
+func (apiClient Client) FetchActivitiesArr(from string, to string) []Activity {
 	url := fmt.Sprintf(
 		"https://%s.mocoapp.com/api/v1/activities?user_id=%s&from=%s&to=%s",
 		apiClient.Domain,
@@ -75,7 +186,7 @@ func (apiClient Client) FetchActivities(from string, to string) []Activity {
 	prepareHeaders(req, authHeader)
 
 	resp, err := client.Do(req)
-	menu.ExitOnError(err, "Request to create activity failed.")
+	menu.ExitOnError(err, "Request to fetch activities failed.")
 	defer resp.Body.Close()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
@@ -160,57 +271,55 @@ func (apiClient Client) UpdateActivity(
 	defer resp.Body.Close()
 }
 
-func (apiClient Client) FetchAssignedProjects() []Project {
+func (apiClient Client) DeleteActivity(
+	activityId int64,
+) {
 	url := fmt.Sprintf(
-		"https://%s.mocoapp.com/api/v1/projects/assigned",
+		"https://%s.mocoapp.com/api/v1/activities/%s",
 		apiClient.Domain,
+		strconv.FormatInt(activityId, 10),
 	)
 	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
 
 	client := &http.Client{}
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("DELETE", url, nil)
 	menu.ExitOnError(err, "Failed to create request.")
 
 	prepareHeaders(req, authHeader)
 
 	resp, err := client.Do(req)
-	menu.ExitOnError(err, "Request to fetch assined projects failed.")
+	menu.ExitOnError(err, "Request to delete activity failed.")
 	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	menu.ExitOnError(err, "Failed to read response body.")
-
-	var projects []Project
-	json.Unmarshal(bodyBytes, &projects)
-
-	return projects
 }
 
-func (apiClient Client) FetchTasksByProjectId(projectId int64) []Task {
-	url := fmt.Sprintf(
-		"https://%s.mocoapp.com/api/v1/projects/%s/tasks",
-		apiClient.Domain,
-		strconv.FormatInt(projectId, 10),
-	)
-	authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
+func (apiClient Client) ControlActivityTimer(
+	activityId int64,
+	control string,
+) {
+	if control == "start" || control == "stop" {
+		url := fmt.Sprintf(
+			"https://%s.mocoapp.com/api/v1/activities/%s/%s_timer",
+			apiClient.Domain,
+			strconv.FormatInt(activityId, 10),
+			control,
+		)
+		authHeader := fmt.Sprintf("Token token=%s", apiClient.ApiKey)
 
-	client := &http.Client{}
+		client := &http.Client{}
 
-	req, err := http.NewRequest("GET", url, nil)
-	menu.ExitOnError(err, "Failed to create request.")
+		req, err := http.NewRequest("PATCH", url, nil)
+		menu.ExitOnError(err, "Failed to create request.")
 
-	prepareHeaders(req, authHeader)
+		prepareHeaders(req, authHeader)
 
-	resp, err := client.Do(req)
-	menu.ExitOnError(err, "Request to fetch tasks by project id failed.")
-	defer resp.Body.Close()
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	menu.ExitOnError(err, "Failed to read response body.")
-
-	var tasks []Task
-	json.Unmarshal(bodyBytes, &tasks)
-
-	return tasks
+		resp, err := client.Do(req)
+		menu.ExitOnError(
+			err,
+			fmt.Sprintf("Request to %s activity timer failed.", control),
+		)
+		defer resp.Body.Close()
+	} else {
+		menu.Exit("Timer control different than \"start\" or \"stop\".")
+	}
 }
