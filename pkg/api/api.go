@@ -251,7 +251,7 @@ func (client Client) UpdateActivity(
 	httpClient := &http.Client{}
 
 	newActivity := UpdateActivity{
-		ActivityId:  activityId,
+		Id:          activityId,
 		ProjectId:   projectId,
 		TaskId:      taskId,
 		Date:        date,

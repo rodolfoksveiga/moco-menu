@@ -40,3 +40,22 @@ func FilterProjectsByCustomerId(projects []Project, customerId int64) []Project 
 
 	return filteredProjects
 }
+
+func FilterUniqueCustomers(projects []Project) []Customer {
+	var customers []Customer
+	for _, project := range projects {
+		hasCustomer := false
+		for _, customer := range customers {
+			if customer == project.Customer {
+				hasCustomer = true
+				break
+			}
+		}
+
+		if !hasCustomer {
+			customers = append(customers, project.Customer)
+		}
+	}
+
+	return customers
+}

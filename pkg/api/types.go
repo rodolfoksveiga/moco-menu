@@ -10,11 +10,17 @@ type Customer struct {
 	Name string `json:"name"`
 }
 
+func (t Customer) GetId() int64    { return t.Id }
+func (t Customer) GetName() string { return t.Name }
+
 type Project struct {
 	Id       int64    `json:"id"`
 	Name     string   `json:"name"`
 	Customer Customer `json:"customer"`
 }
+
+func (t Project) GetId() int64    { return t.Id }
+func (t Project) GetName() string { return t.Name }
 
 type ActivityProject struct {
 	Id   int64  `json:"id"`
@@ -24,6 +30,13 @@ type ActivityProject struct {
 type Task struct {
 	Id   int64  `json:"id"`
 	Name string `json:"name"`
+}
+
+func (t Task) GetId() int64    { return t.Id }
+func (t Task) GetName() string { return t.Name }
+
+func GetName[T interface{ GetName() string }](t T) string {
+	return t.GetName()
 }
 
 type Activity struct {
@@ -54,7 +67,7 @@ type CreateActivity struct {
 }
 
 type UpdateActivity struct {
-	ActivityId  int64   `json:"activity_id"`
+	Id          int64   `json:"activity_id"`
 	ProjectId   int64   `json:"project_id"`
 	TaskId      int64   `json:"task_id"`
 	Date        string  `json:"date"`

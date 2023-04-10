@@ -4,9 +4,9 @@ package main
 import (
 	"fmt"
 	"os/user"
-	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rodolfoksveiga/moco-menu/internal/config"
@@ -14,6 +14,64 @@ import (
 	"github.com/rodolfoksveiga/moco-menu/pkg/api"
 	"github.com/rodolfoksveiga/moco-menu/pkg/menu"
 )
+
+func prepareDateMenuOptions() []string {
+	today := time.Now()
+	dateMenuOptions := []string{
+		fmt.Sprintf(
+			"0. Today (%s)",
+			today.Format("2006-01-02"),
+		),
+		fmt.Sprintf(
+			"1. Yesterday (%s)",
+			today.AddDate(0, 0, -1).Format("2006-01-02"),
+		),
+		fmt.Sprintf(
+			"2. Two days ago (%s)",
+			today.AddDate(0, 0, -2).Format("2006-01-02"),
+		),
+	}
+
+	return dateMenuOptions
+}
+
+func prepareEndDateMenuOptions(startDateStr string) []string {
+	startDate := menu.ValidateDate(startDateStr)
+	endDateMenuOptions := []string{
+		fmt.Sprintf(
+			"0. Last input (%s)",
+			startDate.Format("2006-01-02"),
+		),
+		fmt.Sprintf(
+			"1. One day after (%s)",
+			startDate.AddDate(0, 0, 1).Format("2006-01-02"),
+		),
+		fmt.Sprintf(
+			"2. Two days after (%s)",
+			startDate.AddDate(0, 0, 2).Format("2006-01-02"),
+		),
+	}
+
+	return endDateMenuOptions
+}
+
+func prepareMenuOptions[T interface {
+	api.Customer | api.Project | api.Task | templates.Template
+	GetName() string
+}](items []T) ([]string, map[string]T) {
+	menuOptions := []string{}
+	menuMap := make(map[string]T)
+	for index, item := range items {
+		nameOption := fmt.Sprintf("%02d. %s", index, item.GetName())
+		if len(menuOptions) > 10 {
+			nameOption = fmt.Sprintf("%s. %s", strconv.Itoa(index), item.GetName())
+		}
+		menuOptions = append(menuOptions, nameOption)
+		menuMap[nameOption] = item
+	}
+	sort.Strings(menuOptions)
+	return menuOptions, menuMap
+}
 
 func main() {
 	osUser, err := user.Current()
@@ -34,17 +92,17 @@ func main() {
 		ApiKey:      config.ApiKey,
 	}
 
-	mainMenuOptions := []string{
+	mainMenuOptions := menu.IndexMenuOptions([]string{
 		"Control activity timer",
 		"Create activity",
-		"Edit activity",
+		"Update activity",
 		"Delete activity",
-	}
+	})
 	selected := menu.RunMenu("Moco menu:", mainMenuOptions)
 
 	switch selected {
 	case mainMenuOptions[0]:
-		timerMenuOptions := []string{"Start", "Stop"}
+		timerMenuOptions := menu.IndexMenuOptions([]string{"Start", "Stop"})
 		selected := menu.RunMenu("Timer control:", timerMenuOptions)
 
 		switch selected {
@@ -89,7 +147,9 @@ func main() {
 			menu.Exit("Invalid menu option.")
 		}
 	case mainMenuOptions[1]:
-		createActivityMenuOptions := []string{"Use template", "From scratch"}
+		createActivityMenuOptions := menu.IndexMenuOptions(
+			[]string{"Use template", "From scratch"},
+		)
 		selected := menu.RunMenu("Create activity:", createActivityMenuOptions)
 
 		switch selected {
@@ -97,26 +157,16 @@ func main() {
 			templatesInit := templates.Init{
 				TemplatePath: fmt.Sprintf("%s/templates.json", configDir),
 			}
-			activityTemplate := templatesInit.Load()
+			activityTemplates := templatesInit.Load()
 
-			chooseTemplateMenuOptions := []string{}
-
-			chooseTemplateMenuMap := make(map[string]templates.Template)
-			for _, template := range *activityTemplate {
-				chooseTemplateMenuOptions = append(
-					chooseTemplateMenuOptions,
-					template.Name,
-				)
-				chooseTemplateMenuMap[template.Name] = template
-			}
-			selected := menu.RunMenu("Template:", chooseTemplateMenuOptions)
-			newActivityTemplate := chooseTemplateMenuMap[selected]
+			templateMenuOptions, templateMenuMap := prepareMenuOptions(*activityTemplates)
+			selected := menu.RunMenu("Template:", templateMenuOptions)
+			newActivityTemplate := templateMenuMap[selected]
 
 			if newActivityTemplate.Duration == nil {
-				selected := menu.RunMenu("Duration:", []string{})
-				selectedFloat, err := strconv.ParseFloat(selected, 64)
-				menu.ExitOnError(err, "Failed to parse duration.")
-				newActivityTemplate.Duration = &selectedFloat
+				selectedDuration := menu.RunMenu("Duration:", []string{})
+				newDuration := menu.ValidateDuration(selectedDuration)
+				newActivityTemplate.Duration = &newDuration
 			}
 
 			if newActivityTemplate.Description == nil {
@@ -135,77 +185,27 @@ func main() {
 		case createActivityMenuOptions[1]:
 			projects := apiClient.FetchActiveProjectsArr()
 
-			customers := make(map[int64]api.Customer)
-			for _, project := range projects {
-				customers[project.Customer.Id] = project.Customer
-			}
-
-			chooseCustomerMenuOptions := []string{}
-			chooseCustomerMenuMap := make(map[string]api.Customer)
-			for _, customer := range customers {
-				chooseCustomerMenuOptions = append(
-					chooseCustomerMenuOptions,
-					customer.Name,
-				)
-				chooseCustomerMenuMap[customer.Name] = customer
-			}
-			sort.Strings(chooseCustomerMenuOptions)
-			selectedCustomer := menu.RunMenu("Costumer:", chooseCustomerMenuOptions)
-			newCustomerId := chooseCustomerMenuMap[selectedCustomer].Id
+			customers := api.FilterUniqueCustomers(projects)
+			customerMenuOptions, customerMenuMap := prepareMenuOptions(customers)
+			selectedCustomer := menu.RunMenu("Costumer:", customerMenuOptions)
+			newCustomerId := customerMenuMap[selectedCustomer].Id
 
 			filteredProjects := api.FilterProjectsByCustomerId(projects, newCustomerId)
-
-			chooseProjectMenuOptions := []string{}
-			chooseProjectMenuMap := make(map[string]api.Project)
-			for _, project := range filteredProjects {
-				chooseProjectMenuOptions = append(
-					chooseProjectMenuOptions,
-					project.Name,
-				)
-				chooseProjectMenuMap[project.Name] = project
-			}
-			sort.Strings(chooseProjectMenuOptions)
-			selectedProject := menu.RunMenu("Project:", chooseProjectMenuOptions)
-			newProjectId := chooseProjectMenuMap[selectedProject].Id
+			projectMenuOptions, projectMenuMap := prepareMenuOptions(filteredProjects)
+			selectedProject := menu.RunMenu("Project:", projectMenuOptions)
+			newProjectId := projectMenuMap[selectedProject].Id
 
 			tasks := apiClient.FetchProjectTasksArr(newProjectId)
-			chooseTaskMenuOptions := []string{}
-			chooseTaskMenuMap := make(map[string]api.Task)
-			for _, task := range tasks {
-				chooseTaskMenuOptions = append(
-					chooseTaskMenuOptions,
-					task.Name,
-				)
-				chooseTaskMenuMap[task.Name] = task
-			}
-			sort.Strings(chooseTaskMenuOptions)
-			selectedTask := menu.RunMenu("Task:", chooseTaskMenuOptions)
-			newTaskId := chooseTaskMenuMap[selectedTask].Id
+			taskMenuOptions, taskMenuMap := prepareMenuOptions(tasks)
+			selectedTask := menu.RunMenu("Task:", taskMenuOptions)
+			newTaskId := taskMenuMap[selectedTask].Id
 
-			today := time.Now()
-			chooseDateMenuOptions := []string{
-				fmt.Sprintf(
-					"Today (%s)",
-					today.Format("2006-01-02"),
-				),
-				fmt.Sprintf(
-					"Yesterday (%s)",
-					today.AddDate(0, 0, -1).Format("2006-01-02"),
-				),
-				fmt.Sprintf(
-					"Before yesterday (%s)",
-					today.AddDate(0, 0, -2).Format("2006-01-02"),
-				),
-			}
-			newDateOutput := menu.RunMenu("Date:", chooseDateMenuOptions)
-			re := regexp.MustCompile("\\d{4}-\\d{2}-\\d{2}")
-			newDate := re.FindString(newDateOutput)
-			_, err := time.Parse("2006-01-02", newDate)
-			menu.ExitOnError(err, "Wrong date format.")
+			dateMenuOptions := prepareDateMenuOptions()
+			selectedDate := menu.RunMenu("Date:", dateMenuOptions)
+			newDate := menu.ValidateDateOutput(selectedDate)
 
 			selectedDuration := menu.RunMenu("Duration:", []string{})
-			newDuration, err := strconv.ParseFloat(selectedDuration, 64)
-			menu.ExitOnError(err, "Wrong duration format.")
+			newDuration := menu.ValidateDuration(selectedDuration)
 
 			selectedDescription := menu.RunMenu("Description:", []string{})
 			newDescription := selectedDescription
@@ -217,14 +217,164 @@ func main() {
 				newDuration,
 				newDescription,
 			)
-		case createActivityMenuOptions[2]:
-			menu.Exit("Work in progress.")
-		case createActivityMenuOptions[3]:
-			menu.Exit("Work in progress.")
 		default:
 			menu.Exit("Invalid menu option.")
 		}
+	case mainMenuOptions[2]:
+		startDateMenuOptions := prepareDateMenuOptions()
+		selectedStartDate := menu.RunMenu("Date:", startDateMenuOptions)
+		startDate := menu.ValidateDateOutput(selectedStartDate)
+		fmt.Println(startDate)
 
+		endDateMenuOptions := prepareEndDateMenuOptions(startDate)
+		selectedEndDate := menu.RunMenu("Date:", endDateMenuOptions)
+		endDate := menu.ValidateDateOutput(selectedEndDate)
+		fmt.Println(endDate)
+
+		activities := apiClient.FetchActivitiesArr(startDate, endDate)
+
+		var activitiesMenuOptions []string
+		activitiesMenuMap := make(map[string]api.Activity)
+		for index, activity := range activities {
+			menuValue := fmt.Sprintf(
+				"%s. %s - %s - %s - %s h - %s",
+				strconv.Itoa(index),
+				activity.Customer.Name,
+				activity.Project.Name,
+				activity.Task.Name,
+				fmt.Sprintf("%.2f", activity.Duration),
+				activity.Description,
+			)
+			activitiesMenuOptions = append(activitiesMenuOptions, menuValue)
+			activitiesMenuMap[menuValue] = activity
+		}
+		selectedActivity := menu.RunMenu("Activity:", activitiesMenuOptions)
+		activity := activitiesMenuMap[selectedActivity]
+
+		fmt.Println("ACTIVITY")
+		fmt.Println(activity)
+
+		updateActivityMenuOptions := menu.IndexMenuOptions([]string{
+			"Finish update",
+			"Description",
+			"Duration",
+			"Date",
+			"Task",
+			"Project",
+		})
+		for {
+			selectedProperty := menu.RunMenu("Update property:", updateActivityMenuOptions)
+			selectedPropertySlice := selectedProperty[3:]
+			selectedPropertyDisplay := strings.ToLower(selectedPropertySlice)
+
+			switch selectedProperty {
+			case updateActivityMenuOptions[0]:
+				apiClient.UpdateActivity(
+					activity.Id,
+					activity.Project.Id,
+					activity.Task.Id,
+					activity.Date,
+					activity.Duration,
+					activity.Description,
+				)
+
+				menu.NotifySuccess("Update success.")
+			case updateActivityMenuOptions[1]:
+				menuOptions := fmt.Sprintf(
+					"Actual %s: (%s)",
+					selectedPropertyDisplay,
+					activity.Description,
+				)
+				newDescription := menu.RunMenu(
+					fmt.Sprintf("Update %s:", selectedPropertyDisplay),
+					[]string{menuOptions},
+				)
+				activity.Description = newDescription
+			case updateActivityMenuOptions[2]:
+				menuOptions := fmt.Sprintf(
+					"Actual %s: (%s)",
+					selectedPropertyDisplay,
+					strconv.FormatFloat(activity.Duration, 'f', 2, 64),
+				)
+
+				selectedDuration := menu.RunMenu(
+					fmt.Sprintf("Update %s:", selectedPropertyDisplay),
+					[]string{menuOptions},
+				)
+				newDuration := menu.ValidateDuration(selectedDuration)
+				activity.Duration = newDuration
+			case updateActivityMenuOptions[3]:
+				menuOptions := fmt.Sprintf(
+					"Actual %s: (%s)",
+					selectedPropertyDisplay,
+					activity.Date,
+				)
+				selectedDate := menu.RunMenu(
+					fmt.Sprintf("Update %s:", selectedPropertyDisplay),
+					[]string{menuOptions},
+				)
+				newDateStr := menu.ValidateDateOutput(selectedDate)
+				activity.Date = newDateStr
+			case updateActivityMenuOptions[4]:
+				tasks := apiClient.FetchProjectTasksArr(activity.Project.Id)
+
+				// firstMenuOption := fmt.Sprintf("Actual %s: (%s)", selectedPropertyDisplay, activity.Project.Name)
+				taskMenuOptions, taskMenuMap := prepareMenuOptions(tasks)
+				// menuOptions = append([]string{firstMenuOption}, menuOptions...)
+				selectedTask := menu.RunMenu(fmt.Sprintf("Update %s:", selectedPropertyDisplay), taskMenuOptions)
+				newTaskId := taskMenuMap[selectedTask].Id
+				fmt.Sprintln(strconv.FormatInt(newTaskId, 10))
+				// activity.Project.Id = newProjectId
+			case updateActivityMenuOptions[5]:
+				projects := apiClient.FetchActiveProjectsArr()
+				filteredProjects := api.FilterProjectsByCustomerId(projects, activity.Customer.Id)
+
+				// firstMenuOption := fmt.Sprintf("Actual %s: (%s)", selectedPropertyDisplay, activity.Project.Name)
+				projectMenuOptions, projectMenuMap := prepareMenuOptions(filteredProjects)
+				// menuOptions = append([]string{firstMenuOption}, menuOptions...)
+				selectedProject := menu.RunMenu(fmt.Sprintf("Update %s:", selectedPropertyDisplay), projectMenuOptions)
+				newProjectId := projectMenuMap[selectedProject].Id
+				fmt.Sprintln(strconv.FormatInt(newProjectId, 10))
+				activity.Project.Id = newProjectId
+			default:
+				menu.Exit("Invalid menu option.")
+			}
+		}
+
+	case mainMenuOptions[3]:
+		startDateMenuOptions := prepareDateMenuOptions()
+		selectedStartDate := menu.RunMenu("Date:", startDateMenuOptions)
+		startDate := menu.ValidateDateOutput(selectedStartDate)
+		fmt.Println(startDate)
+
+		endDateMenuOptions := prepareEndDateMenuOptions(startDate)
+		selectedEndDate := menu.RunMenu("Date:", endDateMenuOptions)
+		endDate := menu.ValidateDateOutput(selectedEndDate)
+		fmt.Println(endDate)
+
+		activities := apiClient.FetchActivitiesArr(startDate, endDate)
+
+		var activitiesMenuOptions []string
+		activitiesMenuMap := make(map[string]api.Activity)
+		for index, activity := range activities {
+			menuValue := fmt.Sprintf(
+				"%s. %s - %s - %s - %s h - %s",
+				strconv.Itoa(index),
+				activity.Customer.Name,
+				activity.Project.Name,
+				activity.Task.Name,
+				fmt.Sprintf("%.2f", activity.Duration),
+				activity.Description,
+			)
+			activitiesMenuOptions = append(activitiesMenuOptions, menuValue)
+			activitiesMenuMap[menuValue] = activity
+		}
+		selectedActivity := menu.RunMenu("Activity:", activitiesMenuOptions)
+		activity := activitiesMenuMap[selectedActivity]
+
+		menu.RunConfirmationMenu()
+
+		apiClient.DeleteActivity(activity.Id)
 	default:
 		menu.Exit("Invalid menu option.")
 	}

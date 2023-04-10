@@ -7,3 +7,5 @@ type Template struct {
 	Duration    *float64 `json:"duration,omitempty"`
 	Description *string  `json:"description,omitempty"`
 }
+
+func (t Template) GetName() string { return t.Name }
