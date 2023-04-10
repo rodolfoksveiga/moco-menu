@@ -29,7 +29,7 @@ type Task struct {
 type Activity struct {
 	Id             int64           `json:"id"`
 	Date           string          `json:"date"`
-	Hours          float64         `json:"hours"`
+	Duration       float64         `json:"hours"`
 	Description    string          `json:"description,omitempty"`
 	Project        ActivityProject `json:"project"`
 	Task           Task            `json:"task"`
@@ -49,7 +49,7 @@ type CreateActivity struct {
 	ProjectId   int64   `json:"project_id"`
 	TaskId      int64   `json:"task_id"`
 	Date        string  `json:"date"`
-	Hours       float64 `json:"hours,omitempty"`
+	Duration    float64 `json:"hours,omitempty"`
 	Description string  `json:"description"`
 }
 
@@ -58,6 +58,6 @@ type UpdateActivity struct {
 	ProjectId   int64   `json:"project_id"`
 	TaskId      int64   `json:"task_id"`
 	Date        string  `json:"date"`
-	Hours       float64 `json:"hours"`
+	Duration    float64 `json:"hours"`
 	Description string  `json:"description"`
 }

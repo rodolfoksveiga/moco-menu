@@ -202,7 +202,7 @@ func (client Client) CreateActivity(
 	projectId int64,
 	taskId int64,
 	date string,
-	hours float64,
+	duration float64,
 	description string,
 ) {
 	url := fmt.Sprintf(
@@ -217,7 +217,7 @@ func (client Client) CreateActivity(
 		ProjectId:   projectId,
 		TaskId:      taskId,
 		Date:        date,
-		Hours:       hours,
+		Duration:    duration,
 		Description: description,
 	}
 	newActivityStr, err := json.Marshal(newActivity)
@@ -238,7 +238,7 @@ func (client Client) UpdateActivity(
 	projectId int64,
 	taskId int64,
 	date string,
-	hours float64,
+	duration float64,
 	description string,
 ) {
 	url := fmt.Sprintf(
@@ -255,7 +255,7 @@ func (client Client) UpdateActivity(
 		ProjectId:   projectId,
 		TaskId:      taskId,
 		Date:        date,
-		Hours:       hours,
+		Duration:    duration,
 		Description: description,
 	}
 	newActivityStr, err := json.Marshal(newActivity)

@@ -1,6 +1,8 @@
 package api
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func prepareHeaders(req *http.Request, authHeader string) {
 	req.Header.Set("Accept", "application/json")
@@ -26,4 +28,15 @@ func FindRunningActivityId(activities []Activity) *int64 {
 	}
 
 	return &activityId
+}
+
+func FilterProjectsByCustomerId(projects []Project, customerId int64) []Project {
+	var filteredProjects []Project
+	for _, project := range projects {
+		if project.Customer.Id == customerId {
+			filteredProjects = append(filteredProjects, project)
+		}
+	}
+
+	return filteredProjects
 }
